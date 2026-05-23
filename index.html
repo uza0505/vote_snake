@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>강의 만족도 조사 & 뱀게임</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #111, #333);
+    color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .main {
+    width: 950px;
+    height: 580px;
+    background: #f5f5f7;
+    border-radius: 30px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.5);
+    display: flex;
+    overflow: hidden;
+  }
+
+  .left, .right {
+    width: 50%;
+    padding: 35px;
+    box-sizing: border-box;
+  }
+
+  .left {
+    border-right: 1px solid #ddd;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 30px;
+  }
+
+  button {
+    border: none;
+    border-radius: 18px;
+    padding: 15px 28px;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+  }
+
+  .good { background: #111; color: white; }
+  .bad { background: #dcdcdc; color: #111; }
+
+  .label { display: flex; justify-content: space-between; margin: 18px 0 7px; font-weight: bold; }
+  .bar-box { width: 100%; height: 28px; background: #ddd; border-radius: 20px; overflow: hidden; }
+  .bar { height: 100%; width: 0%; transition: 0.4s; }
+  #goodBar { background: #111; }
+  #badBar { background: #777; }
+  .total { margin-top: 25px; text-align: center; color: #555; }
+
+  .game-title { text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 15px; }
+  .score { text-align: center; margin-bottom: 15px; font-weight: bold; }
+  canvas { display: block; margin: 0 auto; background: #111; border-radius: 20px; }
+  .game-buttons { text-align: center; margin-top: 15px; }
+  .start { background: #111; color: white; padding: 12px 25px; }
+  .guide { text-align: center; color: #666; font-size: 14px; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="main">
+
+  <div class="left">
+    <h1>강의 만족도 조사</h1>
+    <div class="buttons">
+      <button class="good" onclick="vote('good')">만족</button>
+      <button class="bad" onclick="vote('bad')">불만족</button>
+    </div>
+
+    <div class="label">
+      <span>만족</span>
+      <span id="goodCount">0명</span>
+    </div>
+    <div class="bar-box">
+      <div class="bar" id="goodBar"></div>
+    </div>
+
+    <div class="label">
+      <span>불만족</span>
+      <span id="badCount">0명</span>
+    </div>
+    <div class="bar-box">
+      <div class="bar" id="badBar"></div>
+    </div>
+
+    <div class="total" id="totalCount">총 응답 수: 0명</div>
+  </div>
+
+  <div class="right">
+    <div class="game-title">뱀게임</div>
+    <div class="score">점수: <span id="score">0</span></div>
+    <canvas id="game" width="360" height="360"></canvas>
+    <div class="game-buttons">
+      <button class="start" onclick="startGame()">게임 시작</button>
+    </div>
+    <div class="guide">방향키로 뱀을 움직이세요</div>
+  </div>
+
+</div>
+
+<script>
+  // 만족도 조사
+  let good = 0;
+  let bad = 0;
+  function vote(type) {
+    if (type === "good") good++;
+    else bad++;
+    updateChart();
+  }
+  function updateChart() {
+    const total = good + bad;
+    const goodPercent = total === 0 ? 0 : good / total * 100;
+    const badPercent = total === 0 ? 0 : bad / total * 100;
+    document.getElementById("goodCount").innerText = good + "명";
+    document.getElementById("badCount").innerText = bad + "명";
+    document.getElementById("totalCount").innerText = "총 응답 수: " + total + "명";
+    document.getElementById("goodBar").style.width = goodPercent + "%";
+    document.getElementById("badBar").style.width = badPercent + "%";
+  }
+
+  // 뱀게임
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const box = 20;
+  let snake, food, dx, dy, score, gameLoop;
+
+  function startGame() {
+    snake = [{ x: 180, y: 180 }];
+    food = randomFood();
+    dx = box;
+    dy = 0;
+    score = 0;
+    document.getElementById("score").innerText = score;
+    clearInterval(gameLoop);
+    gameLoop = setInterval(drawGame, 120);
+  }
+
+  function randomFood() {
+    return { x: Math.floor(Math.random() * 18) * box, y: Math.floor(Math.random() * 18) * box };
+  }
+
+  document.addEventListener("keydown", changeDirection);
+
+  function changeDirection(e) {
+    if (e.key === "ArrowUp" && dy === 0) { dx = 0; dy = -box; }
+    else if (e.key === "ArrowDown" && dy === 0) { dx = 0; dy = box; }
+    else if (e.key === "ArrowLeft" && dx === 0) { dx = -box; dy = 0; }
+    else if (e.key === "ArrowRight" && dx === 0) { dx = box; dy = 0; }
+  }
+
+  function drawGame() {
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    snake.forEach(part => ctx.fillRect(part.x, part.y, box-2, box-2));
+    ctx.fillStyle = "#888";
+    ctx.beginPath();
+    ctx.arc(food.x+box/2, food.y+box/2, box/2-2, 0, Math.PI*2);
+    ctx.fill();
+
+    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+    if (head.x < 0 || head.y < 0 || head.x >= canvas.width || head.y >= canvas.height || collision(head, snake)) {
+      // 충돌하면 점수 초기화, 뱀 초기 위치로 재시작
+      snake = [{ x: 180, y: 180 }];
+      dx = box;
+      dy = 0;
+      score = 0;
+      document.getElementById("score").innerText = score;
+      food = randomFood();
+      return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      document.getElementById("score").innerText = score;
+      food = randomFood();
+    } else {
+      snake.pop();
+    }
+  }
+
+  function collision(head, body) {
+    return body.some(part => part.x === head.x && part.y === head.y);
+  }
+
+  startGame();
+</script>
+
+</body>
+</html>
